@@ -1,6 +1,7 @@
 package main
 
 import (
+  "bytes"
   "database/sql"
   "flag"
   "fmt"
@@ -56,4 +57,34 @@ func main() {
   }
 
   fmt.Println("DB connection OK.")
+
+  // read file into an array
+//  values make([]string, 200)
+  data, err := os.ReadFile(*args.file)
+  if err != nil {
+    fmt.Fprintf(os.Stderr, "Error: failed to read file %v.\n", *args.file)
+    os.Exit(1)
+  }
+ 
+  values := bytes.Split(data, []byte("\n"))
+  fmt.Printf("Read %v lines.\n", len(values))
+
+  // insert
+  query := fmt.Sprintf("insert into %v(%v) values ($1)", *args.table, *args.column)
+  fmt.Println("Query:", query)
+
+  count := 0
+  for i := range(values) {
+    _, err = db.Exec(query, values[i])
+    if err != nil {
+      fmt.Fprintf(os.Stderr, "Error: failed to insert value #%v: %v.\n", i, values[i])
+      panic(err)
+    }
+    count++
+    if i % 100 == 0 {
+      fmt.Printf("%v...\n", i);
+    }
+  }
+
+  fmt.Printf("Inserted %v records.\n", count)
 }
